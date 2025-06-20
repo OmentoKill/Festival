@@ -1,6 +1,7 @@
 from agents import Agent, Runner, FileSearchTool, RawResponsesStreamEvent, Runner, TResponseInputItem, trace, enable_verbose_stdout_logging
 from openai.types.responses import ResponseContentPartDoneEvent, ResponseTextDeltaEvent
 import asyncio
+from fastapi import FastAPI, UploadFile, File
 from dotenv import load_dotenv
 from typing_extensions import TypedDict, Any
 from agents import Agent, FunctionTool, RunContextWrapper, function_tool
@@ -19,10 +20,15 @@ from Bio.PDB import PDBList
 from pathlib import Path
 import os # Asegúrate de que os está importado
 from fastapi.middleware.cors import CORSMiddleware
+from groq import Groq
+from uuid import uuid4
+
 
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
+os.environ["GROQ_API_KEY"] = "GROQ_API_KEY=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"
+client = Groq(api_key="GROQ_API_KEY=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")
 
 
 app = FastAPI()
@@ -394,6 +400,42 @@ class PreguntaRequest(BaseModel):
 
 class PreguntaResponse(BaseModel):
     respuesta: str
+
+
+class TranscripcionResponse(BaseModel):
+    text: str
+import tempfile
+
+@app.post("/transcribir", response_model=TranscripcionResponse)
+async def transcribir(file: UploadFile = File(...)):
+    try:
+        temp_dir = tempfile.gettempdir()
+        audio_id = str(uuid4()) + ".webm"  # Cambia extensión si lo necesitas
+        audio_path = os.path.join(temp_dir, audio_id)
+
+        # Guardar archivo temporalmente
+        with open(audio_path, "wb") as f:
+            f.write(await file.read())
+        print("[DEBUG] Audio file saved successfully.")
+
+        # Transcribir con Whisper
+        from openai import OpenAI
+        client = OpenAI()
+        print("[DEBUG] Attempting to transcribe audio with Groq...")
+        with open(audio_path, "rb") as audio_file:
+            response = client.audio.transcriptions.create(
+                model="whisper-large-v3",
+                file=audio_file,
+                response_format="text",
+                language="es",
+            )
+            transcribed_text = response.strip()
+
+        return TranscripcionResponse(text=transcribed_text)
+    except Exception as e:
+        print(f"[!] Error:", e)
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+    
 
 @app.post("/preguntar", response_model=PreguntaResponse)
 async def preguntar(request: PreguntaRequest):
