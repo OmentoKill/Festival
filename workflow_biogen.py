@@ -15,9 +15,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import openai
-
+from Bio.PDB import PDBList
+from pathlib import Path
 import os # Asegúrate de que os está importado
-import atexit # Módulo para ejecutar código al salir
+
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -205,6 +206,91 @@ generar_estadisticas = Agent(
 )
 
 #agente de consultar pdbs y retornar pdbs (busqueda en la web)
+@function_tool
+def buscar_pdb_por_nombres_fasta(nombres_fasta: str) -> str:
+    """
+    Dado un string con uno o varios nombres de archivos de secuencias en formato FASTA (por ejemplo, 'BRCA1.fasta,TP53.fasta'),
+    identifica el gen correspondiente a cada archivo y busca en internet los archivos PDB (Protein Data Bank)
+    asociados a esos genes.
+
+    Parámetros:
+        nombres_fasta (str): Nombres de los archivos FASTA separados por comas. Ejemplo: 'BRCA1.fasta,TP53.fasta'
+
+    Retorna:
+        str: Una lista (en string) con los nombres de los archivos PDB a descargar asociados a cada nombre de fasta.
+        Si no se encuentra un PDB para algún archivo, lo indica en la respuesta.
+
+    Ejemplo:
+        buscar_pdb_por_nombres_fasta('BRCA1.fasta,TP53.fasta')
+        'BRCA1: 1JNX, TP53: 2AC0'
+        Retorna: "1JNX", "2AC0"
+    """
+    from openai import OpenAI
+    openai_client = OpenAI()        
+    response = openai_client.responses.create(
+        model="gpt-4.1",
+        tools=[{
+            "type": "web_search_preview",
+            "user_location": {
+                "type": "approximate",
+                "region": "Latin America",
+            }            
+                
+        }],
+
+        input= nombres_fasta,
+    )
+    return response.output_text
+
+def descargar_estructuras_pdb(ids, carpeta_destino="pdbs"):
+    pdbl = PDBList()
+    Path(carpeta_destino).mkdir(exist_ok=True)
+    archivos = []
+    for pdb_id in ids:
+        archivo = pdbl.retrieve_pdb_file(pdb_id, pdir=carpeta_destino, file_format='pdb')
+        archivos.append(Path(archivo).resolve())
+    return archivos
+
+def generar_link_ngl(pdb_id):
+    """Genera un link de visualización en NGL Viewer dado un ID de proteína PDB."""
+    pdb_id = pdb_id.lower()
+    return f"https://nglviewer.org/ngl/?script=load%20https://files.rcsb.org/download/{pdb_id.upper()}.pdb"
+
+def generar_visualizaciones(ids):
+    """Descarga y genera links visuales para cada proteína."""
+    descargar_estructuras_pdb(ids)
+    links = {pdb_id: generar_link_ngl(pdb_id) for pdb_id in ids}
+    return links
+
+@function_tool
+def descargar_pdbs(ids: str) -> str:
+    """
+    Tool que recibe un ID de proteína (o múltiples separados por comas) y retorna
+    los enlaces de visualización en NGL Viewer para las estructuras 3D.
+
+    Args:
+        ids (str): IDs PDB separados por comas (ej. "1TUP,4HHB")
+
+    Returns:
+        str: Enlaces de visualización en formato texto.
+    """
+    list_ids = [id_.strip().upper() for id_ in ids.split(",")]
+    enlaces = generar_visualizaciones(list_ids)
+
+    resultado = "\n".join([f"{id_pdb}: {url}" for id_pdb, url in enlaces.items()])
+    return resultado 
+
+
+
+generar_pdbs = Agent(
+    name="generar_pdbs",
+    handoff_description="Agente encargado de la busqueda y descarga de pdbs",
+    instructions= """
+        Eres un agente especializado en buscar proteinas para esto debes usar la herramienta de: 'buscar_pdb_por_nombre_fasta',
+        seguidamente usa la herramienta de 'descargar_pbs' para realizar la descargar y generar el link de visualización de la estrcutura 3D.
+    """,
+    tools=[buscar_pdb_por_nombres_fasta, descargar_pdbs]
+)
 
 
 @function_tool
@@ -265,9 +351,6 @@ agente_enrutador_genetico = Agent(
 )
 
 
-#endpoints y desplegar en render o railway
-
-import inspect
 
 #persistencia con redis
 
