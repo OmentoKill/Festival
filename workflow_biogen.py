@@ -18,6 +18,7 @@ import openai
 from Bio.PDB import PDBList
 from pathlib import Path
 import os # Asegúrate de que os está importado
+from fastapi.middleware.cors import CORSMiddleware
 
 
 load_dotenv()
@@ -25,7 +26,13 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 app = FastAPI()
-archivos_generados_en_sesion = set()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://agentomics.vercel.app"], 
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],
+)
 
 #tool del agente de extracción de datos y fusión de fastas
 # En workflow_biogen.py
@@ -288,6 +295,22 @@ generar_pdbs = Agent(
     instructions= """
         Eres un agente especializado en buscar proteinas para esto debes usar la herramienta de: 'buscar_pdb_por_nombre_fasta',
         seguidamente usa la herramienta de 'descargar_pbs' para realizar la descargar y generar el link de visualización de la estrcutura 3D.
+        Genera una salida limpia para el usuario con una descripcion y el link de visualizacion.
+
+        ### Ejemplo de Salida Esperada
+
+        ---
+
+        **Estructura de Proteína Encontrada**
+
+        *   **Proteína:** Hemoglobina (Humana)
+        *   **Identificador PDB:** `2HHB`
+        *   **Descripción:** Deoxyhaemoglobin (haemoglobin in the T state). Esta es la forma de la hemoglobina que no está unida al oxígeno.
+        *   **Visualización 3D:** https://molstar.org/viewer/?pdb=2HHB
+
+        ---
+
+        Espero que esta información
     """,
     tools=[buscar_pdb_por_nombres_fasta, descargar_pdbs]
 )
