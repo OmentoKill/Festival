@@ -341,7 +341,7 @@ agente_enrutador_genetico = Agent(
     - Si solicita análisis estadístico de una secuencia fusionada, usa 'generar_estadisticas'.
     - Si solicita estructuras de proteínas, usa 'consultar_pdbs'.
     - Si se te pide mas informacion  como (Nombre, Organismo ,Cambio Promedio de Vida, Efecto en la Vida , Influencia en Longevidad) utiliza 'agentic_rag')
-    - Si se te pide la estructura del gen o proteina utilita 'generar_pdbs'
+    - Si se te pide la estructura del gen o proteina utilita para visuazliar con un link 'generar_pdbs'
 
     Debes devolver exactamente lo que retorne el agente especializado seleccionado, sin agregar ni omitir información.
     En caso de que la información no sea clara o no se entienda que se debe realizar debes preguntar al usuario.
