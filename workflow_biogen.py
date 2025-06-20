@@ -340,14 +340,14 @@ agente_enrutador_genetico = Agent(
     - Si el usuario solicita descargar, extraer o fusionar genes, usa 'extraer_datos_geneticos'.
     - Si solicita análisis estadístico de una secuencia fusionada, usa 'generar_estadisticas'.
     - Si solicita estructuras de proteínas, usa 'consultar_pdbs'.
-    - Si se te pide mas informacion  como (Nombre, Organismo ,Cambio Promedio de Vida, Efecto en la Vida , Influencia en Longevidad) utiliza 'agentic_rag'
-)
+    - Si se te pide mas informacion  como (Nombre, Organismo ,Cambio Promedio de Vida, Efecto en la Vida , Influencia en Longevidad) utiliza 'agentic_rag')
+    - Si se te pide la estructura del gen o proteina utilita 'generar_pdbs'
 
     Debes devolver exactamente lo que retorne el agente especializado seleccionado, sin agregar ni omitir información.
     En caso de que la información no sea clara o no se entienda que se debe realizar debes preguntar al usuario.
     En caso de que la información no tenga relación con bioinformática y el alcance de los agentes debes expresar que no es un tema para tratar.
     """,
-    handoffs=[extraer_datos_geneticos, generar_estadisticas, agentic_rag]
+    handoffs=[extraer_datos_geneticos, generar_estadisticas, agentic_rag, generar_pdbs]
 )
 
 
