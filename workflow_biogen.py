@@ -28,7 +28,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://agentomics.vercel.app"], 
+    allow_origins=["https://agentomics.vercel.app","http://localhost:3000"], 
     allow_credentials=True,
     allow_methods=["*"],  
     allow_headers=["*"],
