@@ -77,8 +77,6 @@ extraer_datos_geneticos = Agent(
 )
 
 
-#agente de analizar fusiones (AGENTIC CRAG)
-
 
 #agente de generar estadisticas (adecuar para que las estadisticas tengan en cuenta los fastas, lo mismo las funciones que se usan)
 @function_tool
@@ -208,7 +206,44 @@ generar_estadisticas = Agent(
 
 #agente de consultar pdbs y retornar pdbs (busqueda en la web)
 
-#agente de analizar información de los otros agentes- generar pdf's (AGENTIC RAG)
+
+@function_tool
+def search_in_knowledge(input_question: str) -> str:
+    """
+    Busca la pregunta ingresada en la base de conocimiento (archivos PDF, etc.).
+
+        Argumentos:
+            input_text (str): El texto de entrada con la pregunta para consultar al modelo.
+
+        Retorna:
+            str: El texto de salida generado por el modelo.
+    """
+
+    from openai import OpenAI
+    client = OpenAI()
+
+    response = client.responses.create(
+        model="gpt-4o",
+        input=input_question,
+        tools=[{
+            "type": "file_search",
+            "vector_store_ids": ["vs_6854c883ffb88191967dfaff2848b3e4"]
+        }]
+    )
+
+    return response.output_text
+
+# AnswerQuestionsAgent: answers questions about the hotel using available knowledge.
+agentic_rag = Agent(
+    name="agentic_rag",
+    handoff_description="Agente para responder preguntas sobre gener y analisis genetico ",
+    instructions='''Eres un agente experto en genética molecular y bioinformática.
+    Tu objetivo es responder preguntas sobre genes, análisis de secuencias, expresión génica, mutaciones, estructuras proteicas, funciones biológicas y cualquier fenómeno relacionado con el ADN, ARN o proteínas.
+    para lo anterior usa tu base de conocimiento, las estadisticas que proporcionen los agentes y el conocimiento general que tengas.
+    siempre responde con claridad, precision cientifica y contexto cientifico.
+    Procura usar la herramienta search_in_knowledge''',
+    tools=[search_in_knowledge]
+)
 
 #agente enrutador
 agente_enrutador_genetico = Agent(
@@ -219,13 +254,14 @@ agente_enrutador_genetico = Agent(
     - Si el usuario solicita descargar, extraer o fusionar genes, usa 'extraer_datos_geneticos'.
     - Si solicita análisis estadístico de una secuencia fusionada, usa 'generar_estadisticas'.
     - Si solicita estructuras de proteínas, usa 'consultar_pdbs'.
-    - Si pide un reporte en PDF con los resultados, usa 'generar_pdf'.
+    - Si se te pide mas informacion  como (Nombre, Organismo ,Cambio Promedio de Vida, Efecto en la Vida , Influencia en Longevidad) utiliza 'agentic_rag'
+)
 
     Debes devolver exactamente lo que retorne el agente especializado seleccionado, sin agregar ni omitir información.
     En caso de que la información no sea clara o no se entienda que se debe realizar debes preguntar al usuario.
     En caso de que la información no tenga relación con bioinformática y el alcance de los agentes debes expresar que no es un tema para tratar.
     """,
-    handoffs=[extraer_datos_geneticos, generar_estadisticas]
+    handoffs=[extraer_datos_geneticos, generar_estadisticas, agentic_rag]
 )
 
 
