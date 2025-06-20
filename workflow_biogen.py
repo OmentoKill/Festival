@@ -27,8 +27,8 @@ from uuid import uuid4
 
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
-os.environ["GROQ_API_KEY"] = "GROQ_API_KEY=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"
-client = Groq(api_key="GROQ_API_KEY=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")
+os.environ["GROQ_API_KEY"] = "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"
+client = Groq(api_key="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")
 
 
 app = FastAPI()
